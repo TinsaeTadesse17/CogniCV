@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials.json
+      - OPENAI_API_KEY=your_openai_api_key
+    depends_on:
+      - texlive
+
+  texlive:
+    image: blang/latex:ubuntu
+    volumes:
+      - ./texlive:/data
