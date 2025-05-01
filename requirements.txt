@@ -9,3 +9,8 @@ google-api-python-client
 google-auth
 google-auth-httplib2
 google-auth-oauthlib
+aioredis          # Async Redis client :contentReference[oaicite:0]{index=0}
+fastapi-cache     # FastAPI caching utilities :contentReference[oaicite:1]{index=1}
+pydantic[email]
+langchain[pydantic_v1]
+python-multipart
