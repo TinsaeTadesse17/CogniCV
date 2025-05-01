@@ -9,11 +9,11 @@ services:
       - .:/app
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials.json
-      - OPENAI_API_KEY=your_openai_api_key
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     depends_on:
       - texlive
 
   texlive:
-    image: blang/latex:ubuntu
+    image: kjarosh/latex:2024.4-minimal
     volumes:
       - ./texlive:/data

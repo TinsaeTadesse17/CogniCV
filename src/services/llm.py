@@ -1,46 +1,90 @@
-from langchain_google_vertexai import ChatVertexAI
-from langchain_core.pydantic_v1 import BaseModel as LCBaseModel
-from langchain import PromptTemplate, LLMChain
-from src.core.models.dtos import CVSchema
+# src/services/llm.py
 
-class CVOutput(CVSchema, LCBaseModel):
-    """LangChain wrapper to parse structured CV output."""
+from langchain.pydantic_v1 import BaseModel as LCBaseModel, Field
+from langchain import PromptTemplate, LLMChain
+from langchain_google_vertexai import ChatVertexAI
+from src.models.dtos import CVSchema
+
+# 1) LangChain’s shim model—inherits only from LCBaseModel
+class CVOutput(LCBaseModel):
+    name: str = Field(..., description="Full name")
+    email: str = Field(..., description="Email address")
+    phone: str | None = Field(None, description="Phone number")
+    website: str | None = Field(None, description="Personal website URL")
+
+    summary: str = Field(..., description="A brief professional summary")
+
+    experience: list[dict] = Field(
+        ...,
+        description=(
+            "List of experience items, each with 'company', 'title', 'start_date', "
+            "'end_date', and 'responsibilities' (list of strings)"
+        ),
+    )
+
+    education: list[dict] = Field(
+        ...,
+        description=(
+            "List of education items, each with 'institution', 'degree', 'start_year', "
+            "'end_year'"
+        ),
+    )
+
+    skills: list[str] = Field(..., description="List of skills")
 
 def extract_structured_data(raw_text: str) -> CVSchema:
-    # 1. Initialize Gemini via Vertex AI
+    # 2) Instantiate Gemini via Vertex AI
     llm = ChatVertexAI(
-        model_name="gemini-pro",       # or "gemini-1.5-pro", "gemini-2.0-flash-exp", etc.
-        temperature=0.0,               # deterministic output for structured parsing
-        max_output_tokens=1024,        # adjust as needed
+        model_name="gemini-pro",
+        temperature=0.0,
+        max_output_tokens=4000,
     )
-    # 2. Enforce our Pydantic schema on the LLM’s output
+
+    # 3) Enforce our LCBaseModel schema
     model_with_schema = llm.with_structured_output(CVOutput)
 
-    # 3. Define the prompt
-    template = PromptTemplate(
+    # 4) Prompt definition
+    prompt = PromptTemplate(
         input_variables=["raw_text"],
         template="""
-Extract the following fields from the CV text below and output as JSON conforming exactly to the CVOutput schema:
-{{
-  "contact": {{ name, email, phone, website }},
-  "summary": {{ summary }},
-  "experience": [{{ company, title, start_date, end_date, responsibilities }}...],
-  "education": [{{ institution, degree, start_year, end_year }}...],
-  "skills": [string...]
-}}
------
+Extract fields from the CV text below and output EXACTLY the JSON matching this schema:
+
+- name: string  
+- email: string  
+- phone: string or null  
+- website: string or null  
+- summary: string  
+- experience: [{{company, title, start_date, end_date, responsibilities}}...]  
+- education: [{{institution, degree, start_year, end_year}}...]  
+- skills: [string...]
+
 CV TEXT:
 {raw_text}
-""".strip()
+""".strip(),
     )
 
-    # 4. Build the chain
-    cv_chain = LLMChain(
+    # 5) Build & run chain
+    chain = LLMChain(
         llm=model_with_schema,
-        prompt=template,
-        output_key="cv_structured"
+        prompt=prompt,
+        output_key="parsed"
     )
+    parsed: CVOutput = chain.run_and_return_object(raw_text=raw_text)
 
-    # 5. Run and return our typed CVSchema
-    result: CVOutput = cv_chain.run_and_return_object(raw_text=raw_text)
-    return result
+    # 6) Convert LCBaseModel → your Pydantic CVSchema
+    return CVSchema(
+        contact={
+            "name": parsed.name,
+            "email": parsed.email,
+            "phone": parsed.phone,
+            "website": parsed.website,
+        },
+        summary={"summary": parsed.summary},
+        experience=[
+            item for item in parsed.experience  # already list[dict]
+        ],
+        education=[
+            item for item in parsed.education
+        ],
+        skills=parsed.skills
+    )
