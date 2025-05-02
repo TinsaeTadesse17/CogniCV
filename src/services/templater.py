@@ -1,8 +1,10 @@
 import re
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, EmailStr, HttpUrl
-from urllib.parse import urlparse # To extract domain for display
+from pydantic import HttpUrl
+from urllib.parse import urlparse
+
+from src.models.dtos import CVSchema 
 
 def escape_latex(text: str) -> str:
     """Escapes special LaTeX characters in a string."""

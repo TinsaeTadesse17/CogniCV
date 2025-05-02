@@ -41,6 +41,12 @@ def compile_latex_string_to_pdf(
     
     latex_string = generate_cv_latex(cv_schema)
 
+    # SAVE THE STRING TO FILE
+
+    with open("latex_string.tex", "w", encoding="utf-8") as f:
+        f.write(latex_string)
+    log.info(f"Generated LaTeX string saved to 'latex_string.tex'")
+
     if not latex_string:
         raise ValueError("Input LaTeX string cannot be empty.")
 
@@ -83,6 +89,7 @@ def compile_latex_string_to_pdf(
             )
 
             if process.returncode != 0:
+                exit()
                 log.error(f"Docker LaTeX compilation failed (Pass {run})!")
                 log_content = None
                 if temp_log_file_host.exists():

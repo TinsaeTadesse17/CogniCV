@@ -3,6 +3,9 @@ from src.services import parser, llm, templater, compiler, drive
 from src.utils.file_ops import temp_file_path
 from src.utils.inmemory import db
 import uuid
+from dotenv import load_dotenv
+
+load_dotenv()
 
 router = APIRouter()
 
@@ -18,11 +21,10 @@ def upload_cv(
     raw_text = parser.parse_text(local_pdf)
 
     db.set(f"{random_id}",{
-
         "status": "processing",
     }),
 
-    structured_data = llm.extract_structured_data(random_id, raw_text)
+    structured_data = llm.extract_structured_data(raw_text)
     pdf_path = compiler.compile_latex_string_to_pdf(structured_data)
     new_drive_url = drive.upload_to_drive(random_id, pdf_path)
     db.set(f"{random_id}",{

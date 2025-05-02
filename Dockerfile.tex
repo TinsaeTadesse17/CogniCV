@@ -1,0 +1,20 @@
+FROM kjarosh/latex:2024.4-basic
+
+WORKDIR /app
+
+RUN tlmgr update --self && \
+    tlmgr install \
+      collection-latexrecommended \
+      collection-latexextra \
+      collection-fontsrecommended \
+      cmap \
+      charter \
+      fontawesome5 \
+    && tlmgr install \
+      hyperref \
+      xcolor \
+      titlesec \
+      enumitem \
+      paracol \
+      lastpage \
+    && mktexlsr
