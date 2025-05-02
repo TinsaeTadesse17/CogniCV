@@ -1,90 +1,106 @@
-# src/services/llm.py
-
-from langchain.pydantic_v1 import BaseModel as LCBaseModel, Field
+from src.models.dtos import CVSchema
 from langchain import PromptTemplate, LLMChain
 from langchain_google_vertexai import ChatVertexAI
-from src.models.dtos import CVSchema
 
-# 1) LangChain’s shim model—inherits only from LCBaseModel
-class CVOutput(LCBaseModel):
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    phone: str | None = Field(None, description="Phone number")
-    website: str | None = Field(None, description="Personal website URL")
-
-    summary: str = Field(..., description="A brief professional summary")
-
-    experience: list[dict] = Field(
-        ...,
-        description=(
-            "List of experience items, each with 'company', 'title', 'start_date', "
-            "'end_date', and 'responsibilities' (list of strings)"
-        ),
-    )
-
-    education: list[dict] = Field(
-        ...,
-        description=(
-            "List of education items, each with 'institution', 'degree', 'start_year', "
-            "'end_year'"
-        ),
-    )
-
-    skills: list[str] = Field(..., description="List of skills")
-
+# --- Corrected Function ---
 def extract_structured_data(raw_text: str) -> CVSchema:
-    # 2) Instantiate Gemini via Vertex AI
+    """
+    Extracts structured data from raw CV text directly into the CVSchema format.
+    """
     llm = ChatVertexAI(
         model_name="gemini-pro",
         temperature=0.0,
-        max_output_tokens=4000,
+        max_output_tokens=4096,
     )
+    model_with_schema = llm.with_structured_output(CVSchema)
 
-    # 3) Enforce our LCBaseModel schema
-    model_with_schema = llm.with_structured_output(CVOutput)
-
-    # 4) Prompt definition
     prompt = PromptTemplate(
         input_variables=["raw_text"],
         template="""
-Extract fields from the CV text below and output EXACTLY the JSON matching this schema:
+Extract information from the CV text below and format it strictly according to the following Pydantic schema structure.
+Output EXACTLY the JSON matching this schema. Be thorough and extract all relevant details. If a field is optional and not found, omit it or set it to null.
 
-- name: string  
-- email: string  
-- phone: string or null  
-- website: string or null  
-- summary: string  
-- experience: [{{company, title, start_date, end_date, responsibilities}}...]  
-- education: [{{institution, degree, start_year, end_year}}...]  
-- skills: [string...]
+SCHEMA:
+{{
+    "personal_info": {{
+        "full_name": "string (required)",
+        "location": "string (optional)",
+        "email": "string (email format, optional)",
+        "phone": "string (optional)",
+        "website": "string (URL format, optional)",
+        "linkedin": "string (URL format, optional)",
+        "github": "string (URL format, optional)"
+    }},
+    "summary": {{
+        "text": "string (required, the professional summary)"
+    }} (optional section),
+    "education": [
+        {{
+            "institution": "string (required)",
+            "degree": "string (optional)",
+            "field_of_study": "string (optional)",
+            "start_date": "string (e.g., 'YYYY-MM' or 'YYYY', optional)",
+            "end_date": "string (e.g., 'YYYY-MM', 'YYYY', or 'Present', optional)",
+            "location": "string (optional)",
+            "gpa": "string (optional)",
+            "coursework": ["string", ...] (optional)
+        }},
+        ...
+    ] (optional section),
+    "experience": [
+        {{
+            "company": "string (required)",
+            "role": "string (required, job title)",
+            "start_date": "string (e.g., 'YYYY-MM' or 'YYYY', optional)",
+            "end_date": "string (e.g., 'YYYY-MM', 'YYYY', or 'Present', optional)",
+            "location": "string (optional)",
+            "achievements": ["string (bullet points describing responsibilities/accomplishments)", ...] (optional)
+        }},
+        ...
+    ] (optional section),
+    "publications": [
+         {{
+            "title": "string (required)",
+            "authors": ["string", ...] (optional)",
+            "date": "string (e.g. 'YYYY-MM', optional)",
+            "publisher": "string (optional)",
+            "doi": "string (optional)",
+            "url": "string (URL format, optional)"
+        }},
+        ...
+    ] (optional section),
+    "projects": [
+        {{
+            "name": "string (required)",
+            "description": "string (optional)",
+            "url": "string (URL format, optional)",
+            "start_date": "string (optional)",
+            "end_date": "string (optional)",
+            "tools_used": ["string", ...] (optional)",
+            "highlights": ["string", ...] (optional)"
+        }},
+        ...
+    ] (optional section),
+    "skills": {{
+        "programming_languages": ["string", ...] (optional),
+        "frameworks_libraries": ["string", ...] (optional),
+        "tools": ["string", ...] (optional),
+        "other": ["string", ...] (optional)
+    }} (optional section)
+}}
 
 CV TEXT:
 {raw_text}
 """.strip(),
     )
 
-    # 5) Build & run chain
+    # 3) Build & run chain
     chain = LLMChain(
         llm=model_with_schema,
         prompt=prompt,
-        output_key="parsed"
+        output_key="parsed_cv" # Renamed output key for clarity
     )
-    parsed: CVOutput = chain.run_and_return_object(raw_text=raw_text)
 
-    # 6) Convert LCBaseModel → your Pydantic CVSchema
-    return CVSchema(
-        contact={
-            "name": parsed.name,
-            "email": parsed.email,
-            "phone": parsed.phone,
-            "website": parsed.website,
-        },
-        summary={"summary": parsed.summary},
-        experience=[
-            item for item in parsed.experience  # already list[dict]
-        ],
-        education=[
-            item for item in parsed.education
-        ],
-        skills=parsed.skills
-    )
+    result = chain.invoke({"raw_text": raw_text})
+    parsed: CVSchema = result["parsed_cv"]
+    return parsed
