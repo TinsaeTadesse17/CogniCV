@@ -1,31 +1,31 @@
 from typing import List, Optional
-from pydantic import BaseModel, EmailStr, HttpUrl, Field
+from pydantic import BaseModel, EmailStr
 
 class Contact(BaseModel):
-    name: str = Field(..., description="Full name")
-    email: EmailStr = Field(..., description="Email address")
-    phone: Optional[str] = Field(None, description="Phone number")
-    website: Optional[HttpUrl] = Field(None, description="Personal website or portfolio")
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    website: Optional[str] = None
 
 class Summary(BaseModel):
-    summary: str = Field(..., description="A brief professional summary")
+    summary: Optional[str] = None
 
 class ExperienceItem(BaseModel):
-    company: str
-    title: str
-    start_date: str = Field(..., description="YYYY-MM format")
-    end_date: Optional[str] = Field(..., description="YYYY-MM or 'Present'")
-    responsibilities: List[str]
+    company: Optional[str] = None
+    title: Optional[str] = None
+    start_date: Optional[str] = None  # Format: YYYY-MM
+    end_date: Optional[str] = None    # Format: YYYY-MM or 'Present'
+    responsibilities: Optional[List[str]] = None
 
 class EducationItem(BaseModel):
-    institution: str
-    degree: str
-    start_year: int
-    end_year: Optional[int]
+    institution: Optional[str] = None
+    degree: Optional[str] = None
+    start_year: Optional[int] = None
+    end_year: Optional[int] = None
 
 class CVSchema(BaseModel):
-    contact: Contact
-    summary: Summary
-    experience: List[ExperienceItem]
-    education: List[EducationItem]
-    skills: List[str]
+    contact: Optional[Contact] = None
+    summary: Optional[Summary] = None
+    experience: Optional[List[ExperienceItem]] = None
+    education: Optional[List[EducationItem]] = None
+    skills: Optional[List[str]] = None
