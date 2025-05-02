@@ -5,7 +5,8 @@ from googleapiclient.http import MediaIoBaseDownload
 from googleapiclient.errors import HttpError
 import io
 import re
-
+import os
+from src.utils.inmemory import db
 SCOPES = ['https://www.googleapis.com/auth/drive']
 CREDS_PATH = 'credentials.json'
 
@@ -24,7 +25,7 @@ def get_file_metadata(file_id: str) -> dict:
     return service.files().get(fileId=file_id, fields='id, name, mimeType, shared').execute()
 
 
-def download_from_drive(drive_url: str, dest_path: str) -> str:
+def download_from_drive(cv_id: str, drive_url: str, dest_path: str) -> str:
     """
     Accepts a Google Drive share URL or file ID. Validates PDF type,
     checks public access, and downloads to dest_path.
@@ -60,9 +61,14 @@ def download_from_drive(drive_url: str, dest_path: str) -> str:
     while not done:
         status, done = downloader.next_chunk()
     fh.close()
+    if not os.path.exists(dest_path):
+        db.set(f"{cv_id}", {
+            "status": "failed",
+        })
+        raise Exception("PDF download failed.")
     return dest_path
 
-def upload_to_drive(file_path: str) -> str:
+def upload_to_drive(cv_id: str, file_path: str) -> str:
     SCOPES = ['https://www.googleapis.com/auth/drive.file']
     creds = service_account.Credentials.from_service_account_file(
         'credentials.json', scopes=SCOPES)
@@ -74,4 +80,9 @@ def upload_to_drive(file_path: str) -> str:
     file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
 
     file_id = file.get('id')
+    if not file_id:
+        db.set(f"{cv_id}", {
+            "status": "failed",
+        })
+        raise Exception("PDF upload failed.")
     return f"https://drive.google.com/file/d/{file_id}/view?usp=sharing"

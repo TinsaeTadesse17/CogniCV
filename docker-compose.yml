@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   app:
@@ -8,8 +7,10 @@ services:
     volumes:
       - .:/app
     environment:
-      - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials.json
+      - GOOGLE_APPLICATION_CREDENTIALS=./credentials.json
+      - GOOGLE_CLOUD_PROJECT=cvfrog
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+
     depends_on:
       - texlive
 
