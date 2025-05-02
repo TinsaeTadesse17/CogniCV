@@ -1,20 +1,11 @@
 
 services:
-  app:
-    build: .
-    ports:
-      - "8000:8000"
+  latex_compiler:
+    build:
+      context: .
+      dockerfile: Dockerfile.tex
+    working_dir: /app
     volumes:
-      - .:/app
-    environment:
-      - GOOGLE_APPLICATION_CREDENTIALS=./credentials.json
-      - GOOGLE_CLOUD_PROJECT=cvfrog
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-
-    depends_on:
-      - texlive
-
-  texlive:
-    image: kjarosh/latex:2024.4-minimal
-    volumes:
-      - ./texlive:/data
+      - ./:/app
+    # Disable TTY to prevent interactive prompts in pdflatex
+    tty: false
