@@ -1,4 +1,4 @@
-FROM kjarosh/latex:2024.4-basic
+FROM 	kjarosh/latex:2025.1
 
 WORKDIR /app
 
@@ -17,4 +17,11 @@ RUN tlmgr update --self && \
       enumitem \
       paracol \
       lastpage \
+      geometry \
+      amsmath \
+      eso-pic \
+      bookmark \
+      changepage \
+      needspace \
+      iftex \
     && mktexlsr
