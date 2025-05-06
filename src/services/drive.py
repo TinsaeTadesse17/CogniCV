@@ -72,11 +72,8 @@ def download_from_drive(cv_id: str, drive_url: str, dest_path: str) -> str:
     return dest_path
 
 def upload_to_drive(cv_id: str, file_path: str) -> str:
-    SCOPES = ['https://www.googleapis.com/auth/drive.file']
-    creds = service_account.Credentials.from_service_account_file(
-        'credentials.json', scopes=SCOPES)
-
-    service = build('drive', 'v3', credentials=creds)
+    # use full-drive _get_drive_service so we have permission to change sharing settings
+    service = _get_drive_service()
 
     file_metadata = {'name': 'cv.pdf'}
     media = MediaFileUpload(file_path, mimetype='application/pdf')
