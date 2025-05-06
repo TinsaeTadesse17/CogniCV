@@ -6,10 +6,13 @@ from googleapiclient.errors import HttpError
 import io
 import re
 import os
+import logging
 from src.utils.inmemory import db
+
 SCOPES = ['https://www.googleapis.com/auth/drive']
 CREDS_PATH = 'credentials.json'
 
+log = logging.getLogger(__name__)
 
 def _get_drive_service():
     creds = service_account.Credentials.from_service_account_file(
@@ -85,4 +88,17 @@ def upload_to_drive(cv_id: str, file_path: str) -> str:
             "status": "failed",
         })
         raise Exception("PDF upload failed.")
+    # make the file publicly readable
+    try:
+        service.permissions().create(
+            fileId=file_id,
+            body={
+                'type': 'anyone',
+                'role': 'reader',
+                'allowFileDiscovery': False
+            }
+        ).execute()
+        log.info(f"Set public 'anyone' reader permission on file {file_id}")
+    except HttpError as e:
+        log.warning(f"Could not set public permission for {file_id}: {e}")
     return f"https://drive.google.com/file/d/{file_id}/view?usp=sharing"

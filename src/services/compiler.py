@@ -74,6 +74,7 @@ def compile_latex_string_to_pdf(
             log.info(f"Starting Docker LaTeX compilation via service '{DOCKER_SERVICE_NAME}' (Pass {run}/2)...")
             cmd = [
                 "docker", "compose", "run", "--rm",
+                "--user", f"{os.getuid()}:{os.getgid()}",
                 DOCKER_SERVICE_NAME,
                 LATEX_COMPILER,
                 "-interaction=nonstopmode",
@@ -88,8 +89,8 @@ def compile_latex_string_to_pdf(
                 cwd=PROJECT_ROOT, check=False
             )
 
-            if process.returncode != 0:
-                exit()
+            # treat exit code 1 as warning if PDF was produced
+            if process.returncode not in (0, 1):
                 log.error(f"Docker LaTeX compilation failed (Pass {run})!")
                 log_content = None
                 if temp_log_file_host.exists():
@@ -103,7 +104,10 @@ def compile_latex_string_to_pdf(
                     f"LaTeX compilation failed on pass {run}.",
                     stdout=process.stdout, stderr=process.stderr, log_content=log_content
                 )
-            log.info(f"Docker LaTeX compilation (Pass {run}/2) successful.")
+            elif process.returncode == 1 and temp_pdf_file_host.exists():
+                log.warning(f"pdflatex returned code 1 on pass {run} but PDF exists; continuing.")
+            else:
+                log.info(f"Docker LaTeX compilation (Pass {run}/2) successful.")
 
         if not temp_pdf_file_host.exists():
             raise RuntimeError(f"PDF file not found at {temp_pdf_file_host} after successful compilation steps.")
@@ -113,10 +117,10 @@ def compile_latex_string_to_pdf(
         final_pdf_path = final_pdf_path.resolve()
 
         log.info(f"Moving compiled PDF from {temp_pdf_file_host} to {final_pdf_path}")
-        shutil.move(str(temp_pdf_file_host), str(final_pdf_path))
+        # shutil.move(str(temp_pdf_file_host), str(final_pdf_path))
 
         log.info(f"Successfully generated PDF: {final_pdf_path}")
-        return final_pdf_path
+        return temp_pdf_file_host
 
     except FileNotFoundError as e:
         log.exception(f"Error running subprocess - 'docker' command not found? {e}")
@@ -128,10 +132,10 @@ def compile_latex_string_to_pdf(
     except Exception as e:
         log.exception(f"An unexpected error occurred during PDF compilation: {e}")
         raise RuntimeError(f"An unexpected error occurred: {e}") from e
-    finally:
-        if temp_dir_host_path.exists():
-            log.info(f"Cleaning up temporary directory: {temp_dir_host_path}")
-            try:
-                shutil.rmtree(temp_dir_host_path)
-            except OSError as e:
-                log.error(f"Failed to remove temporary directory {temp_dir_host_path}: {e}")
+    # finally:
+    #     if temp_dir_host_path.exists():
+    #         log.info(f"Cleaning up temporary directory: {temp_dir_host_path}")
+    #         try:
+    #             shutil.rmtree(temp_dir_host_path)
+    #         except OSError as e:
+    #             log.error(f"Failed to remove temporary directory {temp_dir_host_path}: {e}")
