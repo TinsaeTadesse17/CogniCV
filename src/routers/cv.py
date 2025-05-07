@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Form , Response
-from src.services import parser, llm, templater, compiler, drive
+from fastapi import APIRouter, Form, Response, UploadFile, File, BackgroundTasks
+from src.services import parser, llm, compiler, drive
 from src.utils.file_ops import temp_file_path
 from src.utils.inmemory import db
 import uuid
 from dotenv import load_dotenv
+import csv, io
 
 load_dotenv()
 
@@ -36,6 +37,48 @@ def upload_cv(
     return {"success": True, 
             "cv_id": random_id,
             "status": "Done"}
+
+@router.post("/batch_upload")
+async def batch_upload(
+    background_tasks: BackgroundTasks,
+    csv_file: UploadFile = File(...)
+):
+    """
+    Accepts a CSV file with a 'cv_link' column and processes each CV in the background.
+    Returns a list of job IDs.
+    """
+    content = await csv_file.read()
+    text_stream = io.StringIO(content.decode('utf-8'))
+    reader = csv.DictReader(text_stream)
+    job_ids = []
+    for row in reader:
+        cv_link = row.get('cv-link')
+        print("Processing CV link:", cv_link)
+        if cv_link:
+            cv_id = str(uuid.uuid4())
+            db.set(cv_id, { 'status': 'pending' })
+            background_tasks.add_task(_process_cv_job, cv_id, cv_link)
+            job_ids.append(cv_id)  
+    return { 'success': True, 'job_ids': job_ids }
+
+def _process_cv_job(cv_id: str, drive_link: str):
+    """Helper to download, parse, generate, compile, and upload a single CV, updating db status."""
+    try:
+        # Download PDF
+        local_pdf = temp_file_path(suffix='.pdf')
+        drive.download_from_drive(cv_id, drive_link, local_pdf)
+        # Parse, extract
+        raw_text = parser.parse_text(local_pdf)
+        db.set(cv_id, { 'status': 'processing' })
+        structured = llm.extract_structured_data(raw_text)
+        # Generate PDF
+        pdf_path = compiler.compile_latex_string_to_pdf(structured)
+        # Upload to Drive
+        new_url = drive.upload_to_drive(cv_id, pdf_path)
+        db.set(cv_id, { 'status': 'Done', 'drive_url': new_url })
+    except Exception as e:
+        db.set(cv_id, { 'status': 'failed', 'error': str(e) })
+        return
 
 @router.get("/status/{cv_id}")
 def get_status(response: Response, cv_id: str):
