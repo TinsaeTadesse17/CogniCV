@@ -113,14 +113,17 @@ def compile_latex_string_to_pdf(
             raise RuntimeError(f"PDF file not found at {temp_pdf_file_host} after successful compilation steps.")
 
         final_pdf_filename = f"{output_filename_base}_{uuid.uuid4()}.pdf"
-        final_pdf_path = output_dir / final_pdf_filename
-        final_pdf_path = final_pdf_path.resolve()
-
+        final_pdf_path = (output_dir / final_pdf_filename).resolve()
         log.info(f"Moving compiled PDF from {temp_pdf_file_host} to {final_pdf_path}")
-        # shutil.move(str(temp_pdf_file_host), str(final_pdf_path))
-
+        # move PDF to output directory
+        shutil.move(str(temp_pdf_file_host), str(final_pdf_path))
+        # cleanup temporary LaTeX directory
+        try:
+            shutil.rmtree(temp_dir_host_path)
+        except Exception as cleanup_err:
+            log.warning(f"Failed to remove temp directory {temp_dir_host_path}: {cleanup_err}")
         log.info(f"Successfully generated PDF: {final_pdf_path}")
-        return temp_pdf_file_host
+        return final_pdf_path
 
     except FileNotFoundError as e:
         log.exception(f"Error running subprocess - 'docker' command not found? {e}")
