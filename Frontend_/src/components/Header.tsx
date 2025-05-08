@@ -14,7 +14,7 @@ export default function Header() {
           // Add class if you need to adjust logo color
           className="filter brightness-0 invert-[0.8]" // Optional: Makes logo white/gray
         />
-        <h1 className="text-2xl font-bold text-[#FF8A00]">CVForge</h1>
+        <h1 className="text-2xl font-bold text-[#FF8A00]">Kifiya</h1>
       </div>
     </header>
   );
