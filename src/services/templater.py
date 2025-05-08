@@ -21,7 +21,7 @@ def escape_latex(text: str) -> str:
         '~': r'\textasciitilde{}',
         '^': r'\^{}',
         '\\': r'\textbackslash{}',
-        '\n': r'\\', # Basic newline handling, might need adjustment
+        '\n': r' ', # Basic newline handling, might need adjustment
     }
     regex = re.compile('|'.join(re.escape(key) for key in chars.keys()))
     return regex.sub(lambda match: chars[match.group(0)], text)
