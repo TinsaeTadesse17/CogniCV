@@ -15,16 +15,40 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleProcess = async (file: File) => {
+  const handleProcess = async (file: File | null, driveLink: string) => {
     setLoading(true);
+    setError('');
+    setResult(null);
     try {
-      // Mock response
-      const mockResponse = {
-        csvLink: '/processed.csv',
-        pdfLink: '/report.pdf'
-      };
-      setResult(mockResponse);
-      setError('');
+      if (file) {
+        // Batch CSV processing
+        const formData = new FormData();
+        formData.append('csv_file', file);
+        const uploadRes = await fetch('http://localhost:8000/batch_upload', { method: 'POST', body: formData });
+        const { csv_id } = await uploadRes.json();
+        let status = '';
+        let csvLink = '';
+        // Poll status until done
+        while (status !== 'Done') {
+          await new Promise(r => setTimeout(r, 1000));
+          const statusRes = await fetch(`http://localhost:8000/status/${csv_id}`);
+          const data = await statusRes.json();
+          if (statusRes.status === 200 && data.csv_drive_url) {
+            status = 'Done';
+            csvLink = data.csv_drive_url;
+          } else {
+            status = data.status;
+          }
+        }
+        setResult({ csvLink, pdfLink: '' });
+      } else if (driveLink) {
+        // Single CV processing
+        const formData = new FormData();
+        formData.append('drive_link', driveLink);
+        const uploadRes = await fetch('http://localhost:8000/upload', { method: 'POST', body: formData });
+        const data = await uploadRes.json();
+        setResult({ csvLink: '', pdfLink: data.drive_url });
+      }
     } catch (err) {
       setError('Processing failed. Please try again.');
     } finally {

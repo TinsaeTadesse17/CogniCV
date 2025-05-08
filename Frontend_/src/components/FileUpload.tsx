@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 
 interface FileUploadProps {
-  onProcess: (file: File) => void;
+  onProcess: (file: File | null, driveLink: string) => void;
 }
 
 export default function FileUpload({ onProcess }: FileUploadProps) {
@@ -58,10 +58,11 @@ export default function FileUpload({ onProcess }: FileUploadProps) {
         </div>
 
         <button
-          onClick={() => file && onProcess(file)}
+          onClick={() => onProcess(file, driveLink)}
           className="w-full bg-[#FF8A00] text-white py-3 px-6 rounded-lg hover:bg-[#E67A00] transition-colors font-medium"
+          disabled={!file && !driveLink}
         >
-          Process File
+          Process
         </button>
       </div>
     </div>
