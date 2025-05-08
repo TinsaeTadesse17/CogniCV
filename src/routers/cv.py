@@ -3,6 +3,7 @@ from src.services import parser, llm, compiler, drive
 from src.utils.file_ops import temp_file_path
 from src.utils.inmemory import db
 import uuid
+import os
 from dotenv import load_dotenv
 import csv, io
 
@@ -32,6 +33,12 @@ def upload_cv(
         "drive_url": new_drive_url,
         "status": "Done",
     }),
+    # cleanup temp files
+    try:
+        os.remove(local_pdf)
+        os.remove(pdf_path)
+    except OSError:
+        pass
 
     response.status_code = 202
     return {"success": True, 
@@ -73,6 +80,12 @@ def _process_cv_job(cv_id: str, drive_link: str):
         # Upload to Drive
         new_url = drive.upload_to_drive(cv_id, pdf_path)
         db.set(cv_id, { 'status': 'Done', 'drive_url': new_url })
+        # cleanup temp files
+        try:
+            os.remove(local_pdf)
+            os.remove(pdf_path)
+        except OSError:
+            pass
     except Exception as e:
         db.set(cv_id, { 'status': 'failed', 'error': str(e) })
         return
@@ -98,6 +111,12 @@ def _process_csv_job(job_id: str, csv_path: str):
                     pdf_path = compiler.compile_latex_string_to_pdf(structured)
                     new_url = drive.upload_to_drive(cv_uuid, pdf_path)
                     row['drive_url'] = new_url
+                    # cleanup per-cv temp PDF
+                    try:
+                        os.remove(local_pdf)
+                        os.remove(pdf_path)
+                    except OSError:
+                        pass
                 rows.append(row)
         # Write modified CSV
         new_csv = temp_file_path(suffix='.csv')
@@ -105,9 +124,15 @@ def _process_csv_job(job_id: str, csv_path: str):
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(rows)
-        # Upload final CSV
-        csv_url = drive.upload_to_drive(job_id, new_csv)
+        # Upload final CSV with a descriptive name
+        csv_url = drive.upload_to_drive(job_id, new_csv, drive_name='processed_csv.csv')
         db.set(job_id, {'status': 'Done', 'csv_drive_url': csv_url})
+        # cleanup temp CSVs
+        try:
+            os.remove(new_csv)
+            os.remove(csv_path)
+        except OSError:
+            pass
     except Exception as e:
         db.set(job_id, {'status': 'failed', 'error': str(e)})
 

@@ -71,12 +71,17 @@ def download_from_drive(cv_id: str, drive_url: str, dest_path: str) -> str:
         raise Exception("PDF download failed.")
     return dest_path
 
-def upload_to_drive(cv_id: str, file_path: str) -> str:
-    # use full-drive _get_drive_service so we have permission to change sharing settings
+def upload_to_drive(cv_id: str, file_path: str, drive_name: str = None, mime_type: str = None) -> str:
+    # Upload a file to Drive, allowing a custom name and MIME type
     service = _get_drive_service()
-
-    file_metadata = {'name': 'cv.pdf'}
-    media = MediaFileUpload(file_path, mimetype='application/pdf')
+    # Determine file name: use provided name or default to local file name
+    name = drive_name or os.path.basename(file_path)
+    # Guess MIME type if not provided
+    if not mime_type:
+        ext = os.path.splitext(name)[1].lower()
+        mime_type = 'text/csv' if ext == '.csv' else 'application/pdf'
+    file_metadata = {'name': name}
+    media = MediaFileUpload(file_path, mimetype=mime_type)
     file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
 
     file_id = file.get('id')
