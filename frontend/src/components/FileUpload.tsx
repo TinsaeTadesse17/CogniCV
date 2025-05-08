@@ -58,14 +58,9 @@ export default function FileUpload({ onProcess }: FileUploadProps) {
             value={driveLink}
             onChange={(e) => setDriveLink(e.target.value)}
             placeholder="Paste Google Drive link here"
-            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-[#FF8A00] focus:border-[#FF8A00] outline-none transition-shadow duration-300 hover:shadow-lg"
+            className="w-full p-3 border rounded-lg bg-gray-50 text-gray-900 focus:ring-2 focus:ring-[#FF8A00] focus:border-[#FF8A00] outline-none transition-shadow duration-300 hover:shadow-lg placeholder-gray-400"
           />
         </div>
-        {driveLink && (
-          <div className="mt-2 p-2 bg-blue-100 text-blue-600 rounded-md inline-block animate-fadeIn animate-pulse transition-opacity duration-500">
-            {driveLink}
-          </div>
-        )}
 
         <button
           onClick={() => onProcess(file, driveLink)}

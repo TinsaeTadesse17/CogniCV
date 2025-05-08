@@ -99,7 +99,7 @@ export default function Home() {
           )}
           {isQueued && loading && !result && (
             <div className="mt-4 p-2 bg-blue-100 text-blue-800 rounded-md animate-fadeIn">
-              The CSV is sent to the background.
+              The CSV is being processed in the background. You will be notified when it's ready.
             </div>
           )}
           {loading && (
