@@ -60,10 +60,10 @@ async def batch_upload(
     local_csv = temp_file_path(suffix='.csv')
     with open(local_csv, 'wb') as f:
         f.write(content)
-    job_id = str(uuid.uuid4())
-    db.set(job_id, {'status': 'pending'})
-    background_tasks.add_task(_process_csv_job, job_id, local_csv)
-    return {'success': True, 'job_id': job_id}
+    csv_id = str(uuid.uuid4())
+    db.set(csv_id, {'status': 'pending'})
+    background_tasks.add_task(_process_csv_job, csv_id, local_csv)
+    return {'success': True, 'csv_id': csv_id}
 
 def _process_cv_job(cv_id: str, drive_link: str):
     """Helper to download, parse, generate, compile, and upload a single CV, updating db status."""
