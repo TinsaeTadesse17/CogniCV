@@ -153,6 +153,10 @@ The process flow is as follows:
     *   This file is listed in `.gitignore` and should **never** be committed to the repository.
 
 3.  **Configure Environment Variables**:
+    *   Place your downloaded Google Cloud service account key file (renamed to `credentials.json`) in the project root directory.
+    *   This file is listed in `.gitignore` and should **never** be committed to the repository.
+
+3.  **Configure Environment Variables**:
     *   The project uses an `.env.example` file as a template for environment variables. Copy it to create your own `.env` file:
         ```bash
         cp .env.example .env
