@@ -1,7 +1,7 @@
-# 💼 CVForge - Kifiya Internal CV Standardization Tool
+# 💼 CogniCV - Company CV Standardization Tool
 
 > **Standardize. Extract. Empower.**  
-> CVForge is an internal tool for Kifiya to convert employee CVs into a unified LaTeX-based format and extract key information using AI.
+> CogniCV is an internal tool aimed for small to large scale company to convert employee CVs into a unified LaTeX-based format and extract key information using AI.
 
 ---
 
@@ -22,7 +22,7 @@
 
 ## 📦 Overview
 
-CVForge is designed to streamline the processing of Curriculum Vitae (CVs) within Kifiya. It takes CVs, typically in PDF format from Google Drive links or as a batch upload via a CSV file, and performs the following key operations:
+CogniCV is designed to streamline the processing of Curriculum Vitae (CVs) within a company. It takes CVs, typically in PDF format from Google Drive links or as a batch upload via a CSV file, and performs the following key operations:
 
 1.  **Downloads** the CV from the provided Google Drive link.
 2.  **Parses** the text content from the PDF.
@@ -144,7 +144,7 @@ The process flow is as follows:
 
 1.  **Clone the repository**:
     ```bash
-    git clone https://github.com/Kifiya-Agentic-HR/CVForge
+    git clone https://github.com/Kifiya-Agentic-HR/CogniCV
     cd CVForge
     ```
 
